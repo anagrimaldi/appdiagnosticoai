@@ -21,6 +21,12 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     .single();
   if (error || !d) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    const msg = "Falta ANTHROPIC_API_KEY en .env.local (reinicia `npm run dev` después de agregarla).";
+    await supabase.from("diagnosticos").update({ error_analisis: msg }).eq("id", id);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+
   const answers = AnswersSchema.safeParse(d.respuestas);
   if (!answers.success) return NextResponse.json({ error: "Respuestas incompletas" }, { status: 400 });
 
@@ -44,10 +50,12 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
       .eq("id", id);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    let msg = "Error inesperado al analizar";
+    let msg = `Error inesperado al analizar: ${e instanceof Error ? e.message : String(e)}`;
     if (e instanceof AnalysisError) msg = e.message;
     else if (e instanceof Anthropic.AuthenticationError) msg = "API key de Anthropic inválida";
     else if (e instanceof Anthropic.RateLimitError) msg = "Límite de uso de la API alcanzado; reintenta en unos minutos";
+    else if (e instanceof Anthropic.PermissionDeniedError) msg = `Sin permiso en la API de Anthropic: ${e.message}`;
+    else if (e instanceof Anthropic.APIConnectionError) msg = "No se pudo conectar con la API de Anthropic (red, proxy o firewall).";
     else if (e instanceof Anthropic.APIError) msg = `Error de la API (${e.status}): ${e.message}`;
     console.error("analizar", e);
     await supabase.from("diagnosticos").update({ estado: estadoPrevio, error_analisis: msg }).eq("id", id);
