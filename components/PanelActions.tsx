@@ -57,7 +57,7 @@ export default function PanelActions(p: Props) {
   }
 
   async function analizar() {
-    if (p.tieneResultado && !confirm("Se reemplazará el análisis actual. ¿Continuar?")) return;
+    if (p.tieneResultado && !confirm("Se reemplazará el análisis actual y se descartarán los flujos n8n ya diseñados. ¿Continuar?")) return;
     setAnalizando(true);
     setSegundos(0);
     setError(null);

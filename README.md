@@ -1,7 +1,8 @@
 # Diagnóstico IA → Flujos n8n
 
 Aplicativo para levantar diagnósticos de IA/automatización (autoservicio del cliente o entrevista del consultor),
-analizarlos con Claude y entregar: informe web/PDF, flujos n8n importables, stack de herramientas y propuesta comercial con ROI.
+analizarlos con Claude y entregar: informe web/PDF con soluciones priorizadas, stack de herramientas y propuesta comercial con ROI.
+Los flujos n8n importables se diseñan **bajo demanda** con el botón "Diseñar flujo n8n" de cada oportunidad.
 
 ## Stack
 Next.js 16 (App Router) · Supabase (Postgres + Auth) · Claude API (`claude-opus-5-5`) · Tailwind v4 · Despliegue en Vercel.
@@ -23,10 +24,12 @@ Next.js 16 (App Router) · Supabase (Postgres + Auth) · Claude API (`claude-opu
 | `/panel/nuevo` | El consultor carga un diagnóstico en la entrevista |
 | `/panel/[id]` | Respuestas, notas, tarifa, estado y botón **Generar diagnóstico con IA** |
 | `/informe/[token]` | Informe compartible con el cliente (sin notas internas) + PDF |
-| `/api/n8n/[token]/[opId]` | Descarga el workflow n8n de cada oportunidad |
+| `/api/diagnosticos/[id]/flujo/[opId]` | Diseña con IA el flujo n8n de una oportunidad (botón en el panel) |
+| `/api/n8n/[token]/[opId]` | Descarga el workflow n8n ya diseñado |
 
 ## Cómo funciona el análisis
-- `lib/analyze.ts`: prompt experto + catálogo de nodos n8n reales → Claude devuelve JSON con salida estructurada (`lib/result-schema.ts`).
+- `lib/analyze.ts` → `analyzeDiagnostic`: madurez, oportunidades con solución paso a paso, stack y propuesta (salida estructurada, `lib/result-schema.ts`).
+- `lib/analyze.ts` → `designFlow`: solo al pulsar el botón; usa el catálogo de nodos n8n reales y guarda el flujo en `resultado.flujos`.
 - `lib/n8n.ts`: convierte la especificación en workflow importable (IDs, posiciones, conexiones `main` y de IA, nota con credenciales y pasos).
 - `lib/finance.ts`: horas, ahorro, inversión (horas × tarifa), costos mensuales y meses de recuperación se calculan en código, no por la IA.
 - Fallback del lado del servidor activado (`fallbacks: "default"`): si el modelo rechaza la solicitud, la API reintenta con un modelo alternativo.

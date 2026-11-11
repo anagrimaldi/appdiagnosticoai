@@ -63,7 +63,8 @@ export const OportunidadSchema = z.object({
   herramientas: z.array(z.string()),
   kpis: z.array(z.string()),
   riesgos: z.array(z.string()),
-  flujo_n8n: FlujoSchema,
+  disparador: z.string().describe("Evento que iniciaría la automatización (ej: 'llega un mensaje de WhatsApp')"),
+  pasos_solucion: z.array(z.string()).describe("Pasos de la automatización propuesta, en lenguaje de negocio (4 a 8 pasos)"),
 });
 
 export const HerramientaSchema = z.object({
@@ -135,4 +136,14 @@ export type Finanzas = {
   semanas_totales: number;
 };
 
-export type StoredResult = Result & { finanzas: Finanzas; modelo: string };
+/** Resultado guardado. Los flujos n8n se generan bajo demanda y se guardan en `flujos[opId]`. */
+export type StoredResult = Omit<Result, "oportunidades"> & {
+  oportunidades: (Oportunidad & { flujo_n8n?: Flujo })[]; // flujo_n8n: análisis antiguos con flujo incluido
+  flujos?: Record<string, Flujo>;
+  finanzas: Finanzas;
+  modelo: string;
+};
+
+export function getFlujo(r: StoredResult, opId: string): Flujo | null {
+  return r.flujos?.[opId] ?? r.oportunidades.find((o) => o.id === opId)?.flujo_n8n ?? null;
+}

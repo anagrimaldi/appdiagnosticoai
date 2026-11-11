@@ -1,6 +1,7 @@
 import { usd } from "@/lib/finance";
 import type { Diagnostico } from "@/lib/data";
-import type { Oportunidad } from "@/lib/result-schema";
+import FlowButton from "./FlowButton";
+import { getFlujo, type Flujo, type Oportunidad } from "@/lib/result-schema";
 
 const nivelColor = {
   alto: "bg-emerald-100 text-emerald-800",
@@ -101,9 +102,15 @@ export default function Report({ d, interno }: { d: Diagnostico; interno: boolea
       </section>
 
       <section className="space-y-4">
-        <h2 className="h2 page-break">Flujos de automatización en n8n</h2>
+        <h2 className="h2 page-break">Soluciones propuestas</h2>
         {ops.map((o) => (
-          <OportunidadCard key={o.id} o={o} token={d.public_token} />
+          <OportunidadCard
+            key={o.id}
+            o={o}
+            flujo={getFlujo(r, o.id)}
+            token={d.public_token}
+            diagnosticoId={interno ? d.id : null}
+          />
         ))}
       </section>
 
@@ -191,8 +198,17 @@ export default function Report({ d, interno }: { d: Diagnostico; interno: boolea
   );
 }
 
-function OportunidadCard({ o, token }: { o: Oportunidad; token: string }) {
-  const flujo = o.flujo_n8n;
+function OportunidadCard({
+  o,
+  flujo,
+  token,
+  diagnosticoId,
+}: {
+  o: Oportunidad;
+  flujo: Flujo | null;
+  token: string;
+  diagnosticoId: string | null; // solo en el panel interno
+}) {
   return (
     <div id={o.id} className="card scroll-mt-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -202,32 +218,48 @@ function OportunidadCard({ o, token }: { o: Oportunidad; token: string }) {
           </p>
           <h3 className="mt-1 text-lg font-semibold text-slate-900">{o.titulo}</h3>
         </div>
-        <a href={`/api/n8n/${token}/${o.id}`} className="btn-secondary no-print" download>
-          ⬇ JSON n8n
-        </a>
+        <div className="flex flex-wrap items-start gap-2">
+          {flujo && (
+            <a href={`/api/n8n/${token}/${o.id}`} className="btn-secondary no-print" download>
+              ⬇ JSON n8n
+            </a>
+          )}
+          {diagnosticoId && <FlowButton id={diagnosticoId} opId={o.id} existe={!!flujo} />}
+        </div>
       </div>
       <div className="mt-3 grid gap-4 text-sm sm:grid-cols-2">
         <div><p className="font-medium text-slate-900">Problema</p><p className="text-slate-600">{o.problema}</p></div>
         <div><p className="font-medium text-slate-900">Solución</p><p className="text-slate-600">{o.solucion}</p></div>
       </div>
 
-      <div className="mt-4 rounded-lg bg-slate-50 p-4">
-        <p className="text-sm font-semibold text-slate-900">{flujo.nombre}</p>
-        <p className="text-xs text-slate-500">Disparador: {flujo.disparador}</p>
-        <ol className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-          {flujo.nodos.map((n, i) => (
-            <li key={n.ref} className="flex items-center gap-2">
-              <span
-                title={`${n.tipo}\n${n.descripcion}`}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 font-medium text-slate-700"
-              >
-                {n.nombre}
-              </span>
-              {i < flujo.nodos.length - 1 && <span className="text-slate-300">→</span>}
-            </li>
-          ))}
-        </ol>
-      </div>
+      {o.pasos_solucion?.length > 0 && (
+        <div className="mt-4 rounded-lg bg-slate-50 p-4 text-sm">
+          <p className="font-medium text-slate-900">Cómo funcionaría</p>
+          <p className="text-xs text-slate-500">Disparador: {o.disparador}</p>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-600">
+            {o.pasos_solucion.map((p, i) => <li key={i}>{p}</li>)}
+          </ol>
+        </div>
+      )}
+
+      {flujo && (
+        <div className="mt-4 rounded-lg border border-slate-200 p-4">
+          <p className="text-sm font-semibold text-slate-900">Flujo n8n: {flujo.nombre}</p>
+          <ol className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            {flujo.nodos.map((n, i) => (
+              <li key={n.ref} className="flex items-center gap-2">
+                <span
+                  title={`${n.tipo}\n${n.descripcion}`}
+                  className="rounded-md border border-slate-200 bg-white px-2 py-1 font-medium text-slate-700"
+                >
+                  {n.nombre}
+                </span>
+                {i < flujo.nodos.length - 1 && <span className="text-slate-300">→</span>}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       <div className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
         <div>

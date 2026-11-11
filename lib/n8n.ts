@@ -29,8 +29,7 @@ function parseParams(raw: string): Record<string, unknown> {
  * Las posiciones se calculan en código (layout por niveles) y se agrega una nota adhesiva
  * con credenciales y pasos de implementación.
  */
-export function buildN8nWorkflow(op: Oportunidad) {
-  const flujo: Flujo = op.flujo_n8n;
+export function buildN8nWorkflow(op: Pick<Oportunidad, "id">, flujo: Flujo) {
   const byRef = new Map(flujo.nodos.map((n) => [n.ref, n]));
 
   // Nombres únicos (n8n conecta por nombre).
